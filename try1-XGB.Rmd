@@ -1,0 +1,60 @@
+---
+title: "try1-XGB"
+output: html_document
+---
+
+##Algorithm Used 
+XGB algorithm.
+
+##Data preprocessing
+  1.  columns : PassengerId, Name, Ticket was omitted because in our opinion they are random and have no          influence on our result prediction.
+  2.  column Cabin was omitted. XGBoost only works with numeric vectors so we had to tranlate Cabin to 
+      Numeric and failed to do so - one of the reasons was the difference in Cabin levels between train and
+      test datasets. we made a couple of attempts using the dummyVars function but those attempts failed as
+      well.
+  3.  We also had a problem with the Na's and because the large amount of those cells deleting the rows
+      was not an option, so we used rfImpute function to complete the values both in train and test sets.
+
+##Parameters initialization
+we initialized a dataframe with the next possible tunning values:
+  maximum depth = {5,6,7,8}
+  eta ={0.1,0.3,0.5}
+  gamma ={0.1,0.2,0.3}
+  min child weight=0.01
+  
+we used cross validation with 5 folds.
+
+```{r setup}
+#install.packages("randomForest")
+library(randomForest)
+#install.packages("caret")
+library(caret)
+knitr::opts_knit$set(root.dir = 'C:/Users/oleg/Desktop/Study/year5/semesterA/dataAnalys/HW2/Titanic')
+traindf <- read.csv("train.csv",na.strings = "")
+seed<-123
+
+traindf <- read.csv("train.csv",na.strings = "")
+traindf$Survived<- as.factor(traindf$Survived)
+traindf$Pclass<- as.factor(traindf$Pclass)
+traindf <- traindf[,-c(1,4,9,11)]
+
+testdf <-read.csv('test.csv',na.strings = "")
+testdf$Pclass<- as.factor(testdf$Pclass)
+ids<- testdf$PassengerId
+testdf<- testdf[,-c(1,3,8,10)]
+
+
+testdf.imputed <- rfImpute(Pclass ~ ., testdf)
+traindf.imputed <- rfImpute(Survived ~ ., traindf)
+
+#K-fold Cross Validation
+control <- trainControl(method="cv", number=5)
+metric <- "Accuracy"
+
+grid <- expand.grid(.nrounds=20,.max_depth=c(5,6,7,8),.eta=c(0.1,0.3,0.5),.gamma=c(0.1,0.2,0.3),.colsample_bytree=0.5,.min_child_weight=0.01,.subsample=0.7)
+fit.xgb <- train(Survived~., data=traindf.imputed, method="xgbTree", metric=metric, trControl=control, verbose=FALSE,tuneGrid =grid)
+pred=predict(fit.xgb,testdf.imputed)
+res <- cbind(PassengerId=ids,Survived=as.character(pred))
+write.csv(res,file="try1-xgb.csv",row.names = F)
+
+```
