@@ -1,0 +1,114 @@
+---
+title: "Algorithm - Naive Bayes"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_knit$set(root.dir = 'C:/Users/oleg/Desktop/Study/year5/semesterA/dataAnalys/HW2/Titanic')
+set.seed(123)
+```
+
+## Algorithm Used
+
+We choose to use Naive Bayes algorithm like explain in Data Science Intro lesson
+
+For further explaination, see here https://en.wikipedia.org/wiki/Naive_Bayes_classifier>.
+
+
+## Set directory 
+
+Note that we save a backup of the dataframe as `df.backup`
+
+```{r}s
+df <- read.csv("Titanic/train.csv",na.strings = "")
+df.bkup <- df
+#getwd
+```
+
+
+
+
+## Convert Survived column and Pclass column to factors, and extract unwanted columns to dataframe
+
+Note that dont want to take in consideration the following fields:
+
+1. PassengerID
+
+2. Name
+
+3. Ticket
+
+```{r}
+df$Survived<- as.factor(df$Survived)
+df$Pclass<- as.factor(df$Pclass)
+df <- df[,-c(1,4,9)]
+```
+
+
+
+
+
+
+# Split the data into train and test sets
+
+```{r}
+indices <- sample(1:nrow(df),nrow(df)*0.8)
+train_df<- df[indices,]
+test_df<- df[-indices,]
+```
+
+
+
+
+
+
+# Train the model based on the train set:
+
+load e1071 library and invoke naiveBayes method
+
+```{r}
+#install.packages('e1071')
+library(e1071)
+nb_model <- naiveBayes(Survived~.,data = df)
+```
+
+
+
+
+
+#Load Dataframe test and save the passenger Ids
+
+```{r}
+new_df <-read.csv('Titanic/test.csv',na.strings = "")
+ids<- new_df$PassengerId
+
+new_df$Pclass<- as.factor(new_df$Pclass)
+new_df<- new_df[,-c(1,3,8)]
+```
+
+
+
+
+
+
+#Predict target attribute for the test set based on the trained model
+```{r}
+pred <- predict(nb_model,new_df,na.action = na.pass)
+```
+
+
+
+
+
+
+#Create result dataframe and write it into csv
+```{r}
+df_ <- data.frame(PassengerId =ids, Survived = pred)
+write.csv(df_, file = "result.csv", row.names = FALSE)
+```
+
+
+
+
+
+
