@@ -1,0 +1,51 @@
+---
+title: "try4-rpart"
+output: html_document
+---
+
+##Algorithm Used 
+
+rpart with 10-folds cross validation
+
+##Data preprocessing
+  1.  columns : PassengerId, Name, Ticket was omitted because in our opinion they are random and have no          influence on our result prediction.
+  2.  we factorized the Survived and Pclass columns because their numeric value has no influence on the
+      prediction.
+  3.  we united the new levels of Cabin column from the test dataframe to our model as was explained in HW2 
+      tutorial.
+
+##Parameters initialization
+
+we used cross validation with 10 folds.
+
+```{r setup}
+#install.packages("rpart")
+library(rpart)
+#install.packages("caret")
+library(caret)
+
+knitr::opts_knit$set(root.dir = 'C:/Users/oleg/Desktop/Study/year5/semesterA/dataAnalys/HW2/Titanic')
+set.seed(123)
+
+traindf <- read.csv("train.csv",na.strings = "")
+traindf$Survived<- as.factor(traindf$Survived)
+traindf$Pclass<- as.factor(traindf$Pclass)
+traindf <- traindf[,-c(1,4,9)]
+
+testdf <-read.csv('test.csv',na.strings = "")
+testdf$Pclass<- as.factor(testdf$Pclass)
+ids<- testdf$PassengerId
+testdf<- testdf[,-c(1,3,8)]
+
+control <- trainControl(method="cv", number=10)
+titanik.rpart<- train(Survived~., data=traindf, method="rpart", metric="Accuracy", trControl=control,na.action = na.pass)
+
+titanik.rpart$xlevels[["Cabin"]] <- union(titanik.rpart$xlevels[["Cabin"]], levels(testdf$Cabin))
+
+pred <- predict(titanik.rpart, testdf,type = "raw",na.action = na.pass)
+res <- cbind(PassengerId=ids,Survived=as.character(pred))
+write.csv(res,file="try4-rpart.csv",row.names = F)
+
+
+
+```
